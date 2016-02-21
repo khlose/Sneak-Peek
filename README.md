@@ -1,6 +1,7 @@
 # Sneak-Peek
 Basic API calling and data binding in Windows Universal Platform
 
+#Guide
 Here's the guide that I wrote myself to go with this code
 
 
