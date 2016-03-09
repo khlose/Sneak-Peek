@@ -19,6 +19,15 @@ using Newtonsoft.Json;
 using SP1.models;
 using System.Threading.Tasks;
 
+//add this
+
+using Q42.WinRT.Data;
+using System.Diagnostics;
+
+
+
+
+
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
 namespace SP1
@@ -31,42 +40,81 @@ namespace SP1
         public MainPage()
         {
             this.InitializeComponent();
-            configRequest();
-            discoverRequest();
+            //moved
+            //moved
+
+        }
+
+
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        {
+            await configRequest();
+            await discoverRequest();
 
         }
 
 
         public configRootObject conf = new configRootObject();
+
         public async Task configRequest()
         {
             var client = new HttpClient();
+            try {
+                
+                var api_url = new Uri("https://api.themoviedb.org/3/configuration?api_key=783af1800cdfe954a484c64b70f4d0aa", UriKind.Absolute);
+                var res = await DataCache.GetAsync("config_cache",
+                    async () =>
+                    {
+                        var tmp_res = await client.GetStringAsync(api_url);
+                        configRootObject tmp_conf = JsonConvert.DeserializeObject<configRootObject>(tmp_res);
+                        return tmp_conf;
+                    },
+                    expireDate: DateTime.Now.AddDays(2)
+                    );
+                conf = res;
+            }
 
-            //Change YOUR_KEY to your own TMDb key
-            var res = await client.GetStringAsync(new Uri("https://api.themoviedb.org/3/configuration?api_key=YOUR_KEY", UriKind.Absolute));
-            conf = JsonConvert.DeserializeObject<configRootObject>(res);
+            catch
+            {
+                //write what to do when there's no cache and internet here
+                
+            }         
             
         }
 
-   
+        
+
 
         public async Task discoverRequest()
         {
             var client = new HttpClient();
-
-            //Change your key to your own TMDb key
-            var res = await client.GetStringAsync(new Uri("https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&api_key=YOUR_KEY", UriKind.Absolute));
-            discoverRootObject discoverRes = JsonConvert.DeserializeObject<discoverRootObject>(res);
-
             
-            foreach (discoverResult movie in discoverRes.results)
+            try
             {
-                movie.poster_full_url = new Uri(conf.images.base_url + conf.images.poster_sizes[1] + movie.poster_path);
-            }
-
-            //Binding
-            MoviesGridView.ItemsSource = discoverRes.results;
+                discoverRootObject discoverRes = new discoverRootObject();
+                var api_url = new Uri("https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&api_key=783af1800cdfe954a484c64b70f4d0aa", UriKind.Absolute);
            
+                var res = await DataCache.GetAsync("discover_cache_file_name_here",
+                    async () =>
+                    {
+                        var tmp_res = await client.GetStringAsync(api_url);
+                        discoverRootObject dis_res_tmp = JsonConvert.DeserializeObject<discoverRootObject>(tmp_res);
+                        return dis_res_tmp;
+                    });
+                discoverRes = res;
+                foreach (discoverResult movie in discoverRes.results)
+                {
+                    movie.poster_full_url = new Uri(conf.images.base_url + conf.images.poster_sizes[1] + movie.poster_path);
+                }
+
+
+                MoviesGridView.ItemsSource = discoverRes.results;
+
+            }
+            catch
+            {
+                //decide what to do here
+            }          
         }
 
     }
